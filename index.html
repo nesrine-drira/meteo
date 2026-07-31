@@ -71,6 +71,20 @@
   }
   #map { height: 260px; border-radius: 10px; margin-top: 16px; }
   .loading { text-align: center; color: #64748b; padding: 12px; }
+  .advice {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #eef6ff;
+    border: 1px solid #cfe3f7;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+  .advice .advice-emoji { font-size: 2rem; flex-shrink: 0; }
+  .advice .advice-title { font-weight: 600; color: #1e3a5f; margin-bottom: 2px; }
+  .advice .advice-text { color: #475569; font-size: 0.95rem; }
 </style>
 </head>
 <body>
@@ -88,6 +102,13 @@
       <div class="desc" id="desc"></div>
     </div>
     <div id="loading" class="loading hidden">Chargement...</div>
+    <div id="advice" class="advice hidden">
+      <div class="advice-emoji" id="adviceEmoji"></div>
+      <div>
+        <div class="advice-title" id="adviceTitle"></div>
+        <div class="advice-text" id="adviceText"></div>
+      </div>
+    </div>
     <div id="map"></div>
   </div>
 
@@ -139,6 +160,40 @@
     return WEATHER_ICON[code] || '🌡️';
   }
 
+  function getAdvice(temp, code) {
+    if (code >= 95 && code <= 99) {
+      return ['⛈️', 'Orage en cours', 'Restez à l\'abri et évitez les objets métalliques et les arbres.'];
+    }
+    if (code >= 71 && code <= 77) {
+      return ['⛄', 'Il neige', 'Couvrez-vous chaudement, attention au verglas et aux routes glissantes.'];
+    }
+    if (code >= 51 && code <= 67) {
+      return ['☔', 'Il pleut', 'Pensez à prendre un parapluie et un imperméable.'];
+    }
+    if (code >= 80 && code <= 82) {
+      return ['🌦️', 'Averses', 'Des averses passent : gardez un parapluie à portée de main.'];
+    }
+    if (code >= 45 && code <= 48) {
+      return ['🌫️', 'Brouillard', 'Visibilité réduite : soyez prudent en conduisant et en vous déplaçant.'];
+    }
+    if (temp >= 32) {
+      return ['🥵', 'Très forte chaleur', 'Buvez de l\'eau régulièrement et évitez les efforts en plein soleil.'];
+    }
+    if (temp >= 27) {
+      return ['💧', 'Il fait chaud', 'Hydratez-vous bien, buvez de l\'eau et protégez-vous du soleil.'];
+    }
+    if (temp <= -5) {
+      return ['🥶', 'Grand froid', 'Habillez-vous très chaudement et limitez le temps passé dehors.'];
+    }
+    if (temp <= 2) {
+      return ['🧥', 'Il gèle', 'Mettez un manteau chaud, gants et écharpe.'];
+    }
+    if (temp >= 3 && temp < 27 && code === 0) {
+      return ['😎', 'Temps dégagé', 'Il fait beau, profitez-en pour sortir et prendre l\'air !'];
+    }
+    return ['👍', 'Temps correct', 'Conditions normales, bonne journée à vous !'];
+  }
+
   async function geocode(city) {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=fr`;
     const res = await fetch(url);
@@ -188,6 +243,7 @@
     box.textContent = message;
     box.classList.remove('hidden');
     document.getElementById('result').classList.add('hidden');
+    document.getElementById('advice').classList.add('hidden');
   }
 
   function initMap(lat, lon) {
@@ -219,6 +275,11 @@
       `${location.name}${location.country ? ' — ' + location.country : ''}`;
     document.getElementById('temp').textContent = `${Math.round(current.temperature_2m)}°C`;
     document.getElementById('desc').textContent = weatherText(code);
+    const [emoji, title, text] = getAdvice(current.temperature_2m, code);
+    document.getElementById('adviceEmoji').textContent = emoji;
+    document.getElementById('adviceTitle').textContent = title;
+    document.getElementById('adviceText').textContent = text;
+    document.getElementById('advice').classList.remove('hidden');
     document.getElementById('error').classList.add('hidden');
     document.getElementById('result').classList.remove('hidden');
     initMap(location.latitude, location.longitude);
@@ -233,6 +294,7 @@
     btn.disabled = true;
     document.getElementById('loading').classList.remove('hidden');
     document.getElementById('result').classList.add('hidden');
+    document.getElementById('advice').classList.add('hidden');
 
     try {
       const location = await geocode(city);
